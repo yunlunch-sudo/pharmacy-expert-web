@@ -51,7 +51,7 @@ const PrescriptionReviewService = {
         if (this.knowledge) return this.knowledge;
 
         try {
-            const response = await fetch('assets/pharmacy-expert/knowledge-pediatric-dosage-compact.md');
+            const response = await fetch('assets/pharmacy-expert/knowledge-pediatric-dosage.md');
             this.knowledge = await response.text();
             console.log('[Review] Knowledge 로드 완료');
             return this.knowledge;
@@ -129,7 +129,7 @@ ${drugList}
             },
             body: JSON.stringify({
                 model: 'claude-opus-4-5-20250514',
-                max_tokens: 2048,
+                max_tokens: 4096,
                 system: systemPrompt,
                 messages: [{
                     role: 'user',

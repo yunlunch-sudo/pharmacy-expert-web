@@ -93,17 +93,14 @@ const App = {
                     return;
                 }
 
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    try {
-                        await this.processImage(event.target.result);
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
-                reader.readAsDataURL(file);
+                try {
+                    // 이미지 최적화 후 처리
+                    const optimizedImage = await this.optimizeImage(file);
+                    await this.processImage(optimizedImage);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
             };
 
             input.click();
@@ -113,15 +110,85 @@ const App = {
     },
 
     /**
+     * 이미지 최적화 - 처방전 OCR에 최적화된 해상도로 조정
+     * Claude Vision API는 1568px 이하로 리사이징함
+     * 너무 크면 품질 손실, 너무 작으면 글씨 인식 불가
+     */
+    async optimizeImage(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            img.onload = () => {
+                // 최적 해상도: 긴 변 1500px (API 리사이징 방지)
+                const MAX_SIZE = 1500;
+                let { width, height } = img;
+
+                if (width > MAX_SIZE || height > MAX_SIZE) {
+                    if (width > height) {
+                        height = Math.round((height * MAX_SIZE) / width);
+                        width = MAX_SIZE;
+                    } else {
+                        width = Math.round((width * MAX_SIZE) / height);
+                        height = MAX_SIZE;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // 고품질 리사이징
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // PNG로 저장 (무손실, 글씨 선명)
+                const dataUrl = canvas.toDataURL('image/png');
+                console.log(`[Image] 최적화: ${img.width}x${img.height} → ${width}x${height}`);
+                resolve(dataUrl);
+            };
+
+            img.onerror = () => reject(new Error('이미지를 로드할 수 없습니다.'));
+
+            // 파일을 이미지로 로드
+            const reader = new FileReader();
+            reader.onload = (e) => { img.src = e.target.result; };
+            reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
+            reader.readAsDataURL(file);
+        });
+    },
+
+    /**
      * 파일 선택 처리
      */
     async handleFilePick() {
-        try {
-            const imageData = await ImagePicker.pickImage();
-            await this.processImage(imageData);
-        } catch (error) {
+        return new Promise((resolve, reject) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    reject(new Error('파일이 선택되지 않았습니다.'));
+                    return;
+                }
+
+                try {
+                    // 이미지 최적화 후 처리
+                    const optimizedImage = await this.optimizeImage(file);
+                    await this.processImage(optimizedImage);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
+
+            input.click();
+        }).catch(error => {
             this.showToast(error.message);
-        }
+        });
     },
 
     /**

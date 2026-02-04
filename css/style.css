@@ -131,9 +131,10 @@ body {
     position: relative;
     background: var(--gray-100);
     border-radius: var(--radius);
-    aspect-ratio: 4/3;
+    aspect-ratio: 3/4;
     overflow: hidden;
     margin-bottom: 16px;
+    max-height: 60vh;
 }
 
 .camera-preview video {
@@ -170,6 +171,23 @@ body {
     margin-top: 4px;
 }
 
+.photo-tips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: center;
+}
+
+.tip-item {
+    background: var(--gray-200);
+    color: var(--gray-600);
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
 .camera-guide {
     position: absolute;
     inset: 0;
@@ -180,8 +198,8 @@ body {
 }
 
 .guide-frame {
-    width: 90%;
-    height: 70%;
+    width: 85%;
+    height: 80%;
     border: 2px solid rgba(255,255,255,0.8);
     border-radius: 8px;
 }
@@ -598,8 +616,8 @@ body {
     }
 
     .camera-preview {
-        aspect-ratio: 16/9;
-        max-height: 400px;
+        aspect-ratio: 3/4;
+        max-height: 500px;
     }
 
     .prescription-item {
@@ -844,5 +862,137 @@ body {
 
     .card {
         background: #18181b;
+    }
+}
+
+/* ===== 마크다운 검토 결과 스타일 ===== */
+
+.markdown-content {
+    background: white;
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-top: 16px;
+    line-height: 1.7;
+}
+
+.markdown-content h2 {
+    font-size: 1.5rem;
+    color: var(--primary);
+    margin: 24px 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.markdown-content h2:first-child {
+    margin-top: 0;
+}
+
+.markdown-content h3 {
+    font-size: 1.25rem;
+    color: var(--gray-800);
+    margin: 20px 0 12px 0;
+}
+
+.markdown-content h4 {
+    font-size: 1.1rem;
+    color: var(--gray-700);
+    margin: 16px 0 8px 0;
+}
+
+.markdown-content p {
+    margin: 12px 0;
+}
+
+.markdown-content strong {
+    color: var(--gray-900);
+}
+
+.markdown-content ul {
+    margin: 12px 0;
+    padding-left: 24px;
+}
+
+.markdown-content li {
+    margin: 6px 0;
+}
+
+/* 검토 테이블 */
+.review-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.95rem;
+}
+
+.review-table th,
+.review-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border: 1px solid var(--gray-200);
+}
+
+.review-table th {
+    background: var(--gray-100);
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.review-table tr:hover td {
+    background: var(--gray-50);
+}
+
+/* 판정 아이콘 스타일 */
+.markdown-content h4:has(+ ul li:contains("✅")) {
+    color: var(--success);
+}
+
+/* 스킬 활성화 배지 */
+.markdown-content p:first-of-type {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+/* 출처 표시 스타일 */
+.markdown-content strong:contains("📚"),
+.markdown-content strong:contains("🤖") {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+/* 다크모드 마크다운 */
+@media (prefers-color-scheme: dark) {
+    .markdown-content {
+        background: #18181b;
+        color: #e4e4e7;
+    }
+
+    .markdown-content h2 {
+        color: #60a5fa;
+        border-color: #3f3f46;
+    }
+
+    .markdown-content h3,
+    .markdown-content h4 {
+        color: #d4d4d8;
+    }
+
+    .review-table th {
+        background: #27272a;
+        color: #d4d4d8;
+    }
+
+    .review-table th,
+    .review-table td {
+        border-color: #3f3f46;
+    }
+
+    .review-table tr:hover td {
+        background: #27272a;
     }
 }
