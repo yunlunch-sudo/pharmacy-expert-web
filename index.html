@@ -38,7 +38,12 @@
                             <circle cx="12" cy="13" r="3"/>
                         </svg>
                         <p>처방전을 촬영하세요</p>
-                        <small>카메라 버튼을 눌러 촬영을 시작합니다</small>
+                        <small>버튼을 누르면 카메라가 열립니다</small>
+                        <div class="photo-tips">
+                            <div class="tip-item">📄 세로로 촬영</div>
+                            <div class="tip-item">💡 밝은 조명</div>
+                            <div class="tip-item">📝 글자 선명하게</div>
+                        </div>
                     </div>
                     <div class="camera-guide" id="cameraGuide" style="display:none;">
                         <div class="guide-frame"></div>
@@ -137,6 +142,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="js/drugs.js"></script>
     <script src="js/dosage.js"></script>
     <script src="js/camera.js"></script>

@@ -77,42 +77,39 @@ const App = {
     },
 
     /**
-     * 촬영 처리
+     * 촬영 처리 - 네이티브 카메라 앱 직접 실행
      */
     async handleCapture() {
-        const btn = document.getElementById('captureBtn');
-        const btnText = btn.querySelector('span');
+        return new Promise((resolve, reject) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment'; // 후면 카메라 직접 열기
 
-        if (!Camera.isActive) {
-            // 카메라 시작
-            try {
-                btn.disabled = true;
-                btnText.textContent = '카메라 시작 중...';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    reject(new Error('파일이 선택되지 않았습니다.'));
+                    return;
+                }
 
-                await Camera.start();
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        await this.processImage(event.target.result);
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
+                reader.readAsDataURL(file);
+            };
 
-                btnText.textContent = '촬영하기';
-                btn.disabled = false;
-            } catch (error) {
-                this.showToast(error.message);
-                btnText.textContent = '파일 선택';
-                btn.disabled = false;
-
-                // 파일 선택 모드로 전환
-                btn.onclick = () => this.handleFilePick();
-            }
-        } else {
-            // 촬영
-            try {
-                const imageData = Camera.capture();
-                Camera.stop();
-                btnText.textContent = '처방전 촬영';
-
-                await this.processImage(imageData);
-            } catch (error) {
-                this.showToast(error.message);
-            }
-        }
+            input.click();
+        }).catch(error => {
+            this.showToast(error.message);
+        });
     },
 
     /**
@@ -128,7 +125,7 @@ const App = {
     },
 
     /**
-     * 이미지 처리 (OCR)
+     * 이미지 처리 (스킬 기반 처방 검토)
      */
     async processImage(imageData) {
         // API 키 확인
@@ -141,22 +138,92 @@ const App = {
             OCRService.setApiKey(key);
         }
 
-        this.showLoading('처방전 분석 중...');
+        this.showLoading('처방전 검토 중...');
 
         try {
-            const result = await OCRService.extractPrescription(imageData);
+            const result = await PrescriptionReviewService.reviewPrescription(imageData);
             this.currentData = result;
 
             this.hideLoading();
-            this.showPatientSection(result.patient);
-            this.showPrescriptionsSection(result.prescriptions);
 
-            this.showToast('처방전 분석 완료');
+            // 마크다운 결과 표시
+            this.showMarkdownResults(result);
+
+            this.showToast('처방전 검토 완료');
         } catch (error) {
             this.hideLoading();
-            this.showToast('OCR 실패: ' + error.message);
+            this.showToast('검토 실패: ' + error.message);
             this.showManualInput();
         }
+    },
+
+    /**
+     * 마크다운 결과 표시
+     */
+    showMarkdownResults(result) {
+        // 환자/처방 입력 섹션 숨기기
+        document.getElementById('patientSection').style.display = 'none';
+        document.getElementById('prescriptionsSection').style.display = 'none';
+
+        // 결과 섹션 표시
+        document.getElementById('resultsSection').style.display = 'block';
+        const container = document.getElementById('resultsContent');
+
+        // 요약 배지
+        const summary = result.summary;
+        let summaryHtml = '<div class="result-summary">';
+        if (summary.criticalCount > 0) {
+            summaryHtml += `<div class="result-stat danger"><span>🚨 위험 ${summary.criticalCount}건</span></div>`;
+        }
+        if (summary.warningCount > 0) {
+            summaryHtml += `<div class="result-stat warning"><span>⚠️ 주의 ${summary.warningCount}건</span></div>`;
+        }
+        if (!summary.hasIssues) {
+            summaryHtml += '<div class="result-stat success"><span>✅ 모든 용량 적정</span></div>';
+        }
+        summaryHtml += '</div>';
+
+        // 마크다운 렌더링
+        const markdownHtml = this.renderMarkdown(result.markdown);
+
+        container.innerHTML = summaryHtml + '<div class="markdown-content">' + markdownHtml + '</div>';
+
+        // 결과 섹션으로 스크롤
+        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+
+        // 최근 검토에 저장
+        this.saveReview({
+            patient: result.patient,
+            summary: result.summary,
+            markdown: result.markdown,
+            timestamp: new Date().toISOString()
+        });
+    },
+
+    /**
+     * 마크다운 렌더링 (marked.js 사용)
+     */
+    renderMarkdown(markdown) {
+        // marked.js 사용
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+            let html = marked.parse(markdown);
+
+            // 테이블에 클래스 추가
+            html = html.replace(/<table>/g, '<table class="review-table">');
+
+            return html;
+        }
+
+        // marked.js 없을 때 기본 렌더링
+        return markdown
+            .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+            .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
     },
 
     /**
